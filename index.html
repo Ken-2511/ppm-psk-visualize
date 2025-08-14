@@ -17,6 +17,74 @@
             letter-spacing: 0.2em;
             text-align: center;
         }
+        
+        /* Custom slider styles */
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        /* Webkit browsers (Chrome, Safari, newer Edge) */
+        .slider::-webkit-slider-track {
+            background: #374151; /* gray-700 */
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #06b6d4; /* cyan-500 */
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            border: 2px solid #0891b2; /* cyan-600 */
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            background: #0891b2; /* cyan-600 */
+            transform: scale(1.1);
+        }
+        
+        /* Firefox */
+        .slider::-moz-range-track {
+            background: #374151; /* gray-700 */
+            height: 8px;
+            border-radius: 4px;
+            border: none;
+        }
+        
+        .slider::-moz-range-thumb {
+            background: #06b6d4; /* cyan-500 */
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            border: 2px solid #0891b2; /* cyan-600 */
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-moz-range-thumb:hover {
+            background: #0891b2; /* cyan-600 */
+            transform: scale(1.1);
+        }
+        
+        /* Focus styles */
+        .slider:focus {
+            outline: none;
+        }
+        
+        .slider:focus::-webkit-slider-thumb {
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+        }
+        
+        .slider:focus::-moz-range-thumb {
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
@@ -60,38 +128,60 @@
             </div>
         </div>
 
-        <!-- Controls Section (moved to bottom) -->
-        <div class="bg-gray-900/50 rounded-lg p-4 md:p-6 mb-6 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
-            <div class="flex items-center gap-5 flex-wrap">
-                <span class="text-lg font-medium whitespace-nowrap">Input Data:</span>
-                <div class="flex items-end gap-6">
-                    <!-- PPM bit (MSB) -->
-                    <label class="flex flex-col items-center gap-1">
-                        <span class="text-xs text-amber-400">PPM</span>
-                        <input type="checkbox" id="bitPPM" class="sr-only peer">
-                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-400 peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
-                    </label>
-                    <!-- PSK2 -->
-                    <label class="flex flex-col items-center gap-1">
-                        <span class="text-xs text-violet-400">PSK2</span>
-                        <input type="checkbox" id="bitPSK2" class="sr-only peer">
-                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
-                    </label>
-                    <!-- PSK1 -->
-                    <label class="flex flex-col items-center gap-1">
-                        <span class="text-xs text-violet-400">PSK1</span>
-                        <input type="checkbox" id="bitPSK1" class="sr-only peer">
-                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
-                    </label>
-                    <!-- PSK0 (LSB) -->
-                    <label class="flex flex-col items-center gap-1">
-                        <span class="text-xs text-violet-400">PSK0</span>
-                        <input type="checkbox" id="bitPSK0" class="sr-only peer">
-                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
-                    </label>
+        <!-- Controls Section (single row: Input Data + SNR) -->
+        <div class="bg-gray-900/50 rounded-lg p-4 md:p-6 mb-6">
+            <div class="flex items-center gap-3 md:gap-6 flex-nowrap overflow-hidden">
+                <!-- SNR Slider Group (left) -->
+                <div class="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                    <label class="text-lg font-medium whitespace-nowrap text-cyan-400 shrink-0">SNR:</label>
+                    <div class="flex-1 min-w-0">
+                        <div class="relative">
+                            <input type="range"
+                                   id="snrSlider"
+                                   min="0"
+                                   max="100"
+                                   value="100"
+                                   step="1"
+                                   class="w-full h-8 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                        </div>
+                    </div>
+                    <div class="text-lg font-semibold text-cyan-400 min-w-[64px] text-center shrink-0">
+                        <span id="snrValue">∞dB</span>
+                    </div>
                 </div>
-                <!-- Hidden text input to preserve existing logic -->
-                <input type="text" id="dataInput" value="1011" maxlength="4" class="hidden">
+
+                <!-- Input Data Group (right) -->
+                <div class="flex items-center gap-5 shrink-0">
+                    <span class="text-lg font-medium whitespace-nowrap">Input Data:</span>
+                    <div class="flex items-end gap-6">
+                        <!-- PPM bit (MSB) -->
+                        <label class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-amber-400">PPM</span>
+                            <input type="checkbox" id="bitPPM" class="sr-only peer">
+                            <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-400 peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <!-- PSK2 -->
+                        <label class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-violet-400">PSK2</span>
+                            <input type="checkbox" id="bitPSK2" class="sr-only peer">
+                            <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <!-- PSK1 -->
+                        <label class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-violet-400">PSK1</span>
+                            <input type="checkbox" id="bitPSK1" class="sr-only peer">
+                            <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <!-- PSK0 (LSB) -->
+                        <label class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-violet-400">PSK0</span>
+                            <input type="checkbox" id="bitPSK0" class="sr-only peer">
+                            <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                        </label>
+                    </div>
+                    <!-- Hidden text input to preserve existing logic -->
+                    <input type="text" id="dataInput" value="1011" maxlength="4" class="hidden">
+                </div>
             </div>
         </div>
         <p id="error-message" class="text-red-400 text-center mt-4 h-5"></p>
@@ -113,6 +203,8 @@
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             const fullscreenIcon = document.getElementById('fullscreenIcon');
             const exitFullscreenIcon = document.getElementById('exitFullscreenIcon');
+            const snrSlider = document.getElementById('snrSlider');
+            const snrValue = document.getElementById('snrValue');
             
             // --- Info Panel Elements ---
             const ppmBitEl = document.getElementById('ppmBit');
@@ -135,6 +227,34 @@
             // --- Canvas Drawing Constants ---
             const PADDING = { top: 40, right: 20, bottom: 50, left: 60 };
             let canvasWidth, canvasHeight, plotWidth, plotHeight;
+            
+            // --- SNR Calculation ---
+            // SNR slider: 0-100 maps to 0dB to "∞"dB (practical max ~50dB)
+            // Using exponential mapping for better control in lower ranges
+            function calculateSNR(sliderValue) {
+                if (sliderValue >= 99.9) {
+                    return Infinity; // ∞dB
+                }
+                // Exponential mapping: 0-94 maps to 0-50dB with more resolution at lower values
+                const normalizedValue = sliderValue / 94;
+                return Math.round(50 * Math.pow(normalizedValue, 1.5) * 10) / 10; // Round to 1 decimal
+            }
+            
+            function formatSNR(snrDb) {
+                if (snrDb === Infinity) {
+                    return "∞dB";
+                }
+                return snrDb.toFixed(1) + "dB";
+            }
+            
+            function updateSNRDisplay() {
+                const sliderVal = parseInt(snrSlider.value);
+                const snrDb = calculateSNR(sliderVal);
+                const formattedSNR = formatSNR(snrDb);
+                snrValue.textContent = formattedSNR;
+                // Re-draw with updated SNR (noise level)
+                plotSignal(dataInput.value);
+            }
 
             // --- Function to apply a Tukey (tapered cosine) window ---
             // This simulates the LPF by smoothing the pulse edges.
@@ -166,6 +286,15 @@
                 bitPSK0.checked = v[3] === '1';
             }
 
+            // Generate a standard normal random variable using Box-Muller transform
+            function gaussianRandom() {
+                let u1 = Math.random();
+                let u2 = Math.random();
+                // Avoid log(0)
+                if (u1 <= Number.EPSILON) u1 = Number.EPSILON;
+                return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(TWO_PI * u2);
+            }
+
             // --- Main plotting function ---
             function plotSignal(dataString) {
                 // 1. Validate Input
@@ -191,6 +320,9 @@
                 const signalPoints = [];
                 const ppmWindow = PPM_WINDOWS[ppmBit];
                 const pulseSamples = PULSE_DURATION_PS / TIME_STEP_PS;
+                // Accumulate power within the pulse window (post-filter) for SNR reference
+                let powerSum = 0;
+                let powerCount = 0;
 
                 for (let i = 0; i <= NUM_SAMPLES; i++) {
                     const t_ps = i * TIME_STEP_PS;
@@ -205,12 +337,26 @@
                         const windowValue = tukeyWindow(pulseTimeIndex, pulseSamples);
 
                         amplitude = carrier * windowValue;
+                        powerSum += amplitude * amplitude;
+                        powerCount++;
                     }
                     signalPoints.push({ t: t_ps, a: amplitude });
                 }
 
-                // 4. Draw on Canvas
-                draw(signalPoints, ppmWindow);
+                // 4. Add AWGN based on SNR (applied after filtering)
+                const sliderVal = parseInt(snrSlider.value);
+                const snrDb = calculateSNR(sliderVal);
+                let pointsToDraw = signalPoints;
+                if (snrDb !== Infinity && powerCount > 0) {
+                    const avgSignalPower = powerSum / powerCount; // Power during active pulse
+                    const snrLinear = Math.pow(10, snrDb / 10);
+                    const noiseVariance = avgSignalPower / snrLinear;
+                    const noiseStd = Math.sqrt(noiseVariance);
+                    pointsToDraw = signalPoints.map(p => ({ t: p.t, a: p.a + noiseStd * gaussianRandom() }));
+                }
+
+                // 5. Draw on Canvas
+                draw(pointsToDraw, ppmWindow);
             }
             
             // --- Canvas Drawing Logic ---
@@ -335,6 +481,11 @@
                     plotSignal(dataInput.value);
                 });
             });
+            
+            // SNR slider event listener
+            snrSlider.addEventListener('input', updateSNRDisplay);
+            snrSlider.addEventListener('change', updateSNRDisplay);
+            
             window.addEventListener('resize', setupCanvas);
 
             // --- Fullscreen functionality ---
@@ -371,6 +522,7 @@
 
             // Initial setup
             updateSwitchesFromDataInput();
+            updateSNRDisplay();
             setupCanvas();
         });
     </script>
