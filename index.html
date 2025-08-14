@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid 8-PSK + 2-PPM Modulation Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .input-bits {
+            font-family: monospace;
+            letter-spacing: 0.2em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-cyan-400">Hybrid Modulation Visualizer</h1>
+            <p class="text-gray-400 mt-2">8-PSK + 2-PPM | 4 bits/symbol | 500 MSymbol/s</p>
+        </div>
+
+        <!-- Top Row: Signal + Info -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <div id="signalContainer" class="bg-gray-900 rounded-lg p-2 flex-1" style="aspect-ratio: 8 / 5;">
+                <canvas id="signalCanvas" class="mx-auto block"></canvas>
+            </div>
+            <div id="infoPanel" class="flex flex-col gap-4 text-center bg-gray-900/50 p-4 rounded-lg w-full md:w-1/3">
+                <div>
+                    <h3 class="text-sm text-gray-400">PPM Bit</h3>
+                    <p id="ppmBit" class="text-lg font-semibold text-amber-400"></p>
+                </div>
+                <div>
+                    <h3 class="text-sm text-gray-400">PSK Bits</h3>
+                    <p id="pskBits" class="text-lg font-semibold text-violet-400"></p>
+                </div>
+                <div>
+                    <h3 class="text-sm text-gray-400">PSK Value (0-7)</h3>
+                    <p id="pskVal" class="text-lg font-semibold text-violet-400"></p>
+                </div>
+                <div>
+                    <h3 class="text-sm text-gray-400">Phase Shift</h3>
+                    <p id="phase" class="text-lg font-semibold text-violet-400"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Section (moved to bottom) -->
+        <div class="bg-gray-900/50 rounded-lg p-4 md:p-6 mb-6 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+            <div class="flex items-center gap-5 flex-wrap">
+                <span class="text-lg font-medium whitespace-nowrap">Input Data:</span>
+                <div class="flex items-end gap-6">
+                    <!-- PPM bit (MSB) -->
+                    <label class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-amber-400">PPM</span>
+                        <input type="checkbox" id="bitPPM" class="sr-only peer">
+                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-400 peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                    </label>
+                    <!-- PSK2 -->
+                    <label class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-violet-400">PSK2</span>
+                        <input type="checkbox" id="bitPSK2" class="sr-only peer">
+                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                    </label>
+                    <!-- PSK1 -->
+                    <label class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-violet-400">PSK1</span>
+                        <input type="checkbox" id="bitPSK1" class="sr-only peer">
+                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                    </label>
+                    <!-- PSK0 (LSB) -->
+                    <label class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-violet-400">PSK0</span>
+                        <input type="checkbox" id="bitPSK0" class="sr-only peer">
+                        <div class="w-12 h-7 bg-gray-700 rounded-full relative transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-400 peer-checked:bg-violet-500 after:content-[''] after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                    </label>
+                </div>
+                <!-- Hidden text input to preserve existing logic -->
+                <input type="text" id="dataInput" value="1011" maxlength="4" class="hidden">
+            </div>
+        </div>
+        <p id="error-message" class="text-red-400 text-center mt-4 h-5"></p>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const canvas = document.getElementById('signalCanvas');
+            const ctx = canvas.getContext('2d');
+            // visualize button removed
+            const dataInput = document.getElementById('dataInput');
+            const bitPPM = document.getElementById('bitPPM');
+            const bitPSK2 = document.getElementById('bitPSK2');
+            const bitPSK1 = document.getElementById('bitPSK1');
+            const bitPSK0 = document.getElementById('bitPSK0');
+            const errorMessage = document.getElementById('error-message');
+            
+            // --- Info Panel Elements ---
+            const ppmBitEl = document.getElementById('ppmBit');
+            const pskBitsEl = document.getElementById('pskBits');
+            const pskValEl = document.getElementById('pskVal');
+            const phaseEl = document.getElementById('phase');
+
+            // --- Simulation Constants ---
+            const F_C = 4e9; // 4 GHz carrier frequency
+            const SYMBOL_DURATION_PS = 2000; // 2 ns
+            const PULSE_DURATION_PS = 750; // 750 ps
+            const PPM_WINDOWS = [
+                { start: 400, end: 1150 }, // PPM bit = 0
+                { start: 800, end: 1550 }  // PPM bit = 1
+            ];
+            const TIME_STEP_PS = 1; // 1 ps resolution for simulation
+            const NUM_SAMPLES = SYMBOL_DURATION_PS / TIME_STEP_PS;
+            const TWO_PI = 2 * Math.PI;
+
+            // --- Canvas Drawing Constants ---
+            const PADDING = { top: 40, right: 20, bottom: 50, left: 60 };
+            let canvasWidth, canvasHeight, plotWidth, plotHeight;
+
+            // --- Function to apply a Tukey (tapered cosine) window ---
+            // This simulates the LPF by smoothing the pulse edges.
+            function tukeyWindow(n, N, alpha = 0.25) {
+                if (n < 0 || n >= N) return 0;
+                const halfAlphaN = alpha * (N - 1) / 2;
+                if (n < halfAlphaN) {
+                    return 0.5 * (1 - Math.cos(TWO_PI * n / (alpha * (N - 1))));
+                } else if (n >= N - halfAlphaN) {
+                    return 0.5 * (1 - Math.cos(TWO_PI * (N - 1 - n) / (alpha * (N - 1))));
+                }
+                return 1.0;
+            }
+            
+            // --- Helpers ---
+            function updateDataInputFromSwitches() {
+                const b3 = bitPPM.checked ? '1' : '0';
+                const b2 = bitPSK2.checked ? '1' : '0';
+                const b1 = bitPSK1.checked ? '1' : '0';
+                const b0 = bitPSK0.checked ? '1' : '0';
+                dataInput.value = `${b3}${b2}${b1}${b0}`;
+            }
+
+            function updateSwitchesFromDataInput() {
+                const v = dataInput.value.padEnd(4, '0');
+                bitPPM.checked = v[0] === '1';
+                bitPSK2.checked = v[1] === '1';
+                bitPSK1.checked = v[2] === '1';
+                bitPSK0.checked = v[3] === '1';
+            }
+
+            // --- Main plotting function ---
+            function plotSignal(dataString) {
+                // 1. Validate Input
+                if (!/^[01]{4}$/.test(dataString)) {
+                    errorMessage.textContent = 'Please enter exactly 4 binary digits (0 or 1).';
+                    return;
+                }
+                errorMessage.textContent = '';
+
+                // 2. Parse Data
+                const ppmBit = parseInt(dataString[0], 2);
+                const pskBits = dataString.substring(1);
+                const pskValue = parseInt(pskBits, 2);
+                const phase = pskValue * TWO_PI / 8;
+                
+                // Update info panel
+                ppmBitEl.textContent = ppmBit;
+                pskBitsEl.textContent = pskBits;
+                pskValEl.textContent = pskValue;
+                phaseEl.textContent = `${(phase * 180 / Math.PI).toFixed(0)}°`;
+
+                // 3. Generate Signal Data
+                const signalPoints = [];
+                const ppmWindow = PPM_WINDOWS[ppmBit];
+                const pulseSamples = PULSE_DURATION_PS / TIME_STEP_PS;
+
+                for (let i = 0; i <= NUM_SAMPLES; i++) {
+                    const t_ps = i * TIME_STEP_PS;
+                    let amplitude = 0;
+
+                    if (t_ps >= ppmWindow.start && t_ps <= ppmWindow.end) {
+                        const t_sec = t_ps * 1e-12;
+                        const carrier = Math.cos(TWO_PI * F_C * t_sec + phase);
+                        
+                        // Apply window for smoothing
+                        const pulseTimeIndex = (t_ps - ppmWindow.start) / TIME_STEP_PS;
+                        const windowValue = tukeyWindow(pulseTimeIndex, pulseSamples);
+
+                        amplitude = carrier * windowValue;
+                    }
+                    signalPoints.push({ t: t_ps, a: amplitude });
+                }
+
+                // 4. Draw on Canvas
+                draw(signalPoints, ppmWindow);
+            }
+            
+            // --- Canvas Drawing Logic ---
+            function draw(points, ppmWindow) {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                ctx.fillStyle = '#111827'; // bg-gray-900
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                
+                drawAxes();
+                drawWaveform(points, ppmWindow);
+            }
+
+            function drawAxes() {
+                ctx.save();
+                ctx.strokeStyle = '#4b5563'; // gray-600
+                ctx.fillStyle = '#9ca3af'; // gray-400
+                ctx.lineWidth = 1;
+                ctx.font = '12px Inter';
+
+                // X-Axis
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, canvasHeight - PADDING.bottom);
+                ctx.lineTo(canvasWidth - PADDING.right, canvasHeight - PADDING.bottom);
+                ctx.stroke();
+
+                // Y-Axis
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, PADDING.top);
+                ctx.lineTo(PADDING.left, canvasHeight - PADDING.bottom);
+                ctx.stroke();
+
+                // X-Axis Ticks and Labels
+                const xTickInterval = 250;
+                for (let t = 0; t <= SYMBOL_DURATION_PS; t += xTickInterval) {
+                    const x = PADDING.left + (t / SYMBOL_DURATION_PS) * plotWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(x, canvasHeight - PADDING.bottom);
+                    ctx.lineTo(x, canvasHeight - PADDING.bottom + 5);
+                    ctx.stroke();
+                    ctx.textAlign = 'center';
+                    ctx.fillText(t, x, canvasHeight - PADDING.bottom + 20);
+                }
+                ctx.fillText('Time (ps)', PADDING.left + plotWidth / 2, canvasHeight - 15);
+
+                // Y-Axis Ticks and Labels
+                for (let a = -1; a <= 1; a += 0.5) {
+                    const y = PADDING.top + plotHeight / 2 - (a * plotHeight / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(PADDING.left - 5, y);
+                    ctx.lineTo(PADDING.left, y);
+                    ctx.stroke();
+                    ctx.textAlign = 'right';
+                    ctx.fillText(a.toFixed(1), PADDING.left - 10, y + 4);
+                }
+                
+                // Y-Axis Label (rotated)
+                ctx.translate(20, PADDING.top + plotHeight / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Amplitude', 0, 0);
+
+                ctx.restore();
+            }
+
+            function drawWaveform(points, ppmWindow) {
+                // Draw PPM window background
+                const x_start = PADDING.left + (ppmWindow.start / SYMBOL_DURATION_PS) * plotWidth;
+                const x_width = (PULSE_DURATION_PS / SYMBOL_DURATION_PS) * plotWidth;
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.1)'; // amber-400 with opacity
+                ctx.fillRect(x_start, PADDING.top, x_width, plotHeight);
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+                ctx.strokeRect(x_start, PADDING.top, x_width, plotHeight);
+
+                // Draw the signal
+                ctx.beginPath();
+                ctx.strokeStyle = '#67e8f9'; // cyan-300
+                ctx.lineWidth = 2;
+
+                points.forEach((p, i) => {
+                    const x = PADDING.left + (p.t / SYMBOL_DURATION_PS) * plotWidth;
+                    const y = PADDING.top + plotHeight / 2 - (p.a * plotHeight / 2);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                ctx.stroke();
+            }
+
+            // --- Resize and Initialization ---
+            function setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const container = document.getElementById('signalContainer');
+                const containerRect = container.getBoundingClientRect();
+
+                // Enforce 8:5 aspect ratio for the canvas to match container
+                const targetWidth = containerRect.width;
+                const targetHeight = targetWidth * (5 / 8);
+
+                canvas.width = Math.floor(targetWidth * dpr);
+                canvas.height = Math.floor(targetHeight * dpr);
+                canvas.style.width = `${targetWidth}px`;
+                canvas.style.height = `${targetHeight}px`;
+
+                // Reset transform before scaling to avoid cumulative scaling
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+
+                canvasWidth = canvas.width / dpr;
+                canvasHeight = canvas.height / dpr;
+                plotWidth = canvasWidth - PADDING.left - PADDING.right;
+                plotHeight = canvasHeight - PADDING.top - PADDING.bottom;
+
+                plotSignal(dataInput.value);
+            }
+
+            // --- Event Listeners ---
+            [bitPPM, bitPSK2, bitPSK1, bitPSK0].forEach(el => {
+                el.addEventListener('change', () => {
+                    updateDataInputFromSwitches();
+                    plotSignal(dataInput.value);
+                });
+            });
+            window.addEventListener('resize', setupCanvas);
+
+            // Initial setup
+            updateSwitchesFromDataInput();
+            setupCanvas();
+        });
+    </script>
+</body>
+</html>
