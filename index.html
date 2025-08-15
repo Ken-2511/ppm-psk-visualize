@@ -329,8 +329,8 @@
                     let amplitude = 0;
 
                     if (t_ps >= ppmWindow.start && t_ps <= ppmWindow.end) {
-                        const t_sec = t_ps * 1e-12;
-                        const carrier = Math.cos(TWO_PI * F_C * t_sec + phase);
+                        const t_rel_sec = (t_ps - ppmWindow.start) * 1e-12;
+                        const carrier = Math.cos(TWO_PI * F_C * t_rel_sec + phase);
                         
                         // Apply window for smoothing
                         const pulseTimeIndex = (t_ps - ppmWindow.start) / TIME_STEP_PS;
